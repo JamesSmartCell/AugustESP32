@@ -1,0 +1,38 @@
+#######################################
+
+# Syntax Coloring Map For AugustLock
+
+####################################### 
+
+# Class (KEYWORD1)
+
+#######################################
+
+
+
+AugustLock KEYWORD1
+
+
+
+#######################################
+
+# Methods and Functions (KEYWORD2)
+
+#######################################	
+
+
+
+connect	KEYWORD2
+checkStatus KEYWORD2
+lockAction KEYWORD2
+_notifyCB KEYWORD2
+_secureLockCallback KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+ 
+GET_STATUS  LITERAL1
+LOCK LITERAL1
+UNLOCK LITERAL1
+TOGGLE_LOCK LITERAL1

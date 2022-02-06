@@ -1,0 +1,28 @@
+{
+    "description": "August Lock Bluetooth interface for ESP32 family", 
+    "repository": {
+        "url": "https://github.com/JamesSmartCell/AugustESP32", 
+        "type": "git"
+    }, 
+    "platforms": [ 
+        "espressif32"
+    ], 
+    "authors": [
+        {
+            "maintainer": true, 
+            "name": "James Brown", 
+            "url": "https://github.com/JamesSmartCell", 
+            "email": "j@smarttokenlabs.com"
+        }
+    ], 
+    "frameworks": "arduino",
+    "keywords": [
+        "August",
+        "Yale",
+        "Smart Lock",
+		"Bluetooth"
+    ],
+    "name": "AugustESP32", 
+    "version": "0.9", 
+    "homepage": "https://www.smarttokenlabs.com/"
+}
