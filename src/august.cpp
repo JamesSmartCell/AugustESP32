@@ -12,24 +12,50 @@ AugustLock::AugustLock(const char *deviceAddress, const char *handshakeKey, cons
     this->deviceAddress = deviceAddress;
     this->handshakeKey = handshakeKey;
     this->offlineKeyOffset = offlineKeyOffset;
+
+    handshakeKeyBytes = new uint8_t[16];
+    deviceCallback = new AdvertisedDeviceCallbacks(this);
 }
 
-void AugustLock::connect(ConnectCallback callback, notify_callback notifyCB, notify_callback secureLockCallback)
+void AugustLock::init()
+{
+    AUGUST_LOG("Init Bluetooth");
+    NimBLEDevice::init("");
+    NimBLEDevice::setSecurityAuth(BLE_SM_PAIR_AUTHREQ_SC);
+    NimBLEDevice::setPower(ESP_PWR_LVL_P9);
+}
+
+void AugustLock::connect(ConnectCallback callback, notify_callback notifyCB, notify_callback secureLockCallback, DisConnectCallback dsCallback)
 {
     // kick off scan
     AUGUST_LOG("Starting AugustLock BLE Library");
-    handshakeKeyBytes = new uint8_t[16];
     resetCrypto();
 
     pNotifyCB = notifyCB;
     pSecureLockCallback = secureLockCallback;
     connectCallback = callback;
+    dsCb = dsCallback;
 
-    NimBLEDevice::init("");
-    NimBLEDevice::setSecurityAuth(BLE_SM_PAIR_AUTHREQ_SC);
-    NimBLEDevice::setPower(ESP_PWR_LVL_P9);
+    scanForService();
+}
+
+void AugustLock::scanForService()
+{
+    if (pClient != nullptr)
+    {
+        NimBLEDevice::deleteClient(pClient);
+        pClient = NULL;
+        advDevice = NULL;
+    }
+
+    advDevice = NULL;
+
+    doConnect = false;
+    doneConnect = false;
+
+    AUGUST_LOG("Start Bluetooth scan");
     NimBLEScan *pScan = NimBLEDevice::getScan();
-    pScan->setAdvertisedDeviceCallbacks(new AdvertisedDeviceCallbacks(this));
+    pScan->setAdvertisedDeviceCallbacks(deviceCallback);
     pScan->setInterval(45);
     pScan->setWindow(15);
     pScan->setActiveScan(true);
@@ -84,11 +110,10 @@ void AugustLock::lockCommand(LockAction action)
 {
     if (pWriteSecure->canWrite())
     {
-        const char *actionStr = getLockActionStr(action).c_str();
         uint8_t *cmd = lockCmd(getLockCode(action));
         WriteChecksum(cmd);
 
-        AUGUST_LOG("%s: %s", actionStr, ConvertBytesToHex(cmd, 18).c_str());
+        AUGUST_LOG("%s: %s", getLockActionStr(action), ConvertBytesToHex(cmd, 18).c_str());
 
         uint8_t lockMessage[18];
 
@@ -97,9 +122,9 @@ void AugustLock::lockCommand(LockAction action)
 
         delay(50);
 
-        AUGUST_LOG("%s (encrypt): %s", actionStr, ConvertBytesToHex(lockMessage, 18).c_str());
+        AUGUST_LOG("%s (encrypt): %s", getLockActionStr(action), ConvertBytesToHex(lockMessage, 18).c_str());
 
-        AUGUST_LOG("Write for %s", actionStr);
+        AUGUST_LOG("Write for %s", getLockActionStr(action));
         if (pWriteSecure->writeValue(lockMessage, 18, false))
         {
             AUGUST_LOG("Wrote new value to: %s", pWriteSecure->getUUID().toString().c_str());
@@ -175,7 +200,10 @@ bool AugustLock::connectToServer()
         /** Created a client but failed to connect, don't need to keep it as it has no data */
         NimBLEDevice::deleteClient(pClient);
         pClient = NULL;
+        advDevice = NULL;
         AUGUST_LOG("Failed to connect, deleted client");
+        //need to re-do the scan
+        scanForService();
         return false;
     }
     else
@@ -252,7 +280,6 @@ bool AugustLock::connectToServer()
             AUGUST_LOG("Got Write Channel");
 
             getHandshakeBytes(handshakeBytes);
-            size_t len = 18;
 
             if (pWriteHandshake->canWriteNoResponse())
             {
@@ -332,26 +359,31 @@ uint8_t AugustLock::getLockCode(LockAction action)
             break;
         case UNLOCK:
             code = 0x0a;
-            break;    
+            break;
+        case GET_STATUS:
+            code = 0x02; 
+            break;
+        case TOGGLE_LOCK:
+            break;        
     }
 
     return code;
 }
 
-std::string AugustLock::getLockActionStr(LockAction action)
+const char* AugustLock::getLockActionStr(LockAction action)
 {
     switch (action)
     {
         case LOCK:
-            return std::string("Lock");
+            return "Lock";
         case UNLOCK:
-            return std::string("Unlock");
+            return "Unlock";
         case GET_STATUS:
-            return std::string("Get Status");
+            return "Get Status";
         case TOGGLE_LOCK:
-            return std::string("Toggle"); 
+            return "Toggle"; 
         default:
-            return std::string("");
+            return "";
     }
 }
 
@@ -478,10 +510,14 @@ void AugustLock::resetCrypto()
 
 void AugustLock::initSessionKey()
 {
-    // need 16 bytes random key; note that this is dependent on Bluetooth being enabled. Which it should be.
+    // need 16 bytes random key;
     for (int i = 0; i < 4; i++)
     {
-        *((uint32_t *)&handshakeSessionKey[i * 4]) = esp_random();
+        uint32_t rand = esp_random();
+        for(int j = 0; j < 4; j++)
+        {
+            handshakeSessionKey[i*4 + j] = rand >> (j*8);
+        }
     }
 
     AUGUST_LOG("Session Key: %s", ConvertBytesToHex(handshakeSessionKey, 16).c_str());

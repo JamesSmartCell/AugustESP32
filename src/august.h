@@ -12,14 +12,16 @@ static NimBLEUUID serviceUUID("0000FE24-0000-1000-8000-00805F9B34FB");
 static NimBLEUUID serviceUUID2("fe24"); // sometimes the full code isn't advertised correctly, we also need to try the cut down version
 
 typedef void (*ConnectCallback)(const char *, bool);
+typedef void (*DisConnectCallback)();
 
 void scanEndedCB(NimBLEScanResults results);
-static NimBLEAdvertisedDevice *advDevice;
+static DisConnectCallback dsCb = nullptr;
+class AdvertisedDeviceCallbacks;
 
-#if 1
+#if 0
 #define AUGUST_LOG( format, ... ) printf("August: "#format"\n",##__VA_ARGS__)
 #else
-#define AUGUST_LOG( format, ... ) (void)tag
+#define AUGUST_LOG( format, ... ) (void)format
 #endif
 
 typedef enum LockAction
@@ -36,26 +38,29 @@ public:
     AugustLock(const char *deviceAddress, const char *handshakeKey, const uint8_t offlineKeyOffset);
 
     // performs scan, connects to client and does handshake
-    void connect(ConnectCallback callback, notify_callback notifyCB, notify_callback secureLockCallback);
+    void connect(ConnectCallback callback, notify_callback notifyCB, notify_callback secureLockCallback, DisConnectCallback dsCallback);
     void checkStatus();
     void lockAction(LockAction action);
+    void init();
 
     void _notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, uint8_t *pData, size_t length);
     void _secureLockCallback(NimBLERemoteCharacteristic *pRemoteCharacteristic, uint8_t *pData, size_t length);
     
-    void setDoneConnect() { doConnect = true; }
+    void setDiscoveredLock(NimBLEAdvertisedDevice *advDev) { advDevice = advDev; doConnect = true; }
+    void blankClient() { pClient = nullptr; }
 
 private:
     void resetCrypto();
     void lockCommand(LockAction action);
     void closeConnection();
     bool connectToServer();
+    void scanForService();
 
     uint8_t *BuildCommand(byte opcode);
     uint8_t *lockCmd(uint8_t opcode);
     uint8_t *statusCmd();
     uint8_t getLockCode(LockAction action);
-    std::string getLockActionStr(LockAction action);
+    const char* getLockActionStr(LockAction action);
     void getStatus();
 
     void encryptMessage(uint8_t *plainText, uint8_t *encryptBuffer);
@@ -92,6 +97,8 @@ private:
     BLERemoteCharacteristic *pWriteSecure;
 
     NimBLEClient *pClient = nullptr;
+    NimBLEAdvertisedDevice *advDevice = nullptr;
+    AdvertisedDeviceCallbacks *deviceCallback;
 
     notify_callback pNotifyCB;
     notify_callback pSecureLockCallback;
@@ -115,9 +122,7 @@ public:
             /** stop scan before connecting */
             NimBLEDevice::getScan()->stop();
             /** Save the device reference in a global for the client to use*/
-            advDevice = advertisedDevice;
-            /** Ready to connect now */
-            lock->setDoneConnect();
+            lock->setDiscoveredLock(advertisedDevice);
         }
     };
 };
@@ -135,6 +140,7 @@ class ClientCallbacks : public NimBLEClientCallbacks
         AUGUST_LOG("%s: Disconnected", pClient->getPeerAddress().toString().c_str());
         NimBLEDevice::deleteClient(pClient);
         delay(2000);
+        if (dsCb != nullptr) dsCb();
     };
 
     /** Called when the peripheral requests a change to the connection parameters.

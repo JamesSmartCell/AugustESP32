@@ -24,11 +24,18 @@ void secureLockCallback(NimBLERemoteCharacteristic *pRemoteCharacteristic, uint8
 }
 
 
-void connectCallback(const char *msg, bool status)
+void statusCallback(const char *msg, bool status)
 {
-    Serial.print("Connect Callback: ");
+    Serial.print("Status Callback: ");
     Serial.println(msg);
     isLocked = status;
+}
+
+//Note: you may need this if you are using the lock together with a WiFi connection
+//ESP32 doesn't like BlueTooth and WiFi being used together
+void disconnectCallback()
+{
+    Serial.println("BlueTooth disconnected");
 }
 
 long checkmillis;
@@ -38,8 +45,9 @@ void setup()
 {
     Serial.begin(115200);
     Serial.println("Starting Arduino BLE Client application...");
+    augustLock.init();
 
-    augustLock.connect(&connectCallback, &notifyCB, &secureLockCallback);
+    augustLock.connect(&statusCallback, &notifyCB, &secureLockCallback, &disconnectCallback);
     checkmillis = millis();
     augustLock.lockAction(TOGGLE_LOCK); //initially toggle the lock, once connection is ready
 }
