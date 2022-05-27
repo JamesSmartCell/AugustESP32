@@ -1,4 +1,4 @@
-# AugustESP32
+# AugustESP32  [![PlatformIO Registry](https://badges.registry.platformio.org/packages/jamessmartcell/library/AugustESP32.svg)](https://registry.platformio.org/libraries/jamessmartcell/AugustESP32)
 
 ESP32 BlueTooth implementation for August smart lock.
 
@@ -10,4 +10,4 @@ Based on work by Marcus Lum https://github.com/Marcus-L/xamarin-august-ble
 
 https://user-images.githubusercontent.com/12689544/145123443-9971d171-e03e-4fe3-90ad-1638ccd9b0cc.mp4
 
-[![PlatformIO Registry](https://badges.registry.platformio.org/packages/jamessmartcell/library/AugustESP32.svg)](https://registry.platformio.org/libraries/jamessmartcell/AugustESP32)
+
