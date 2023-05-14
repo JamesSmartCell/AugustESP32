@@ -1,5 +1,25 @@
 # AugustESP32  [![PlatformIO Registry](https://badges.registry.platformio.org/packages/jamessmartcell/library/AugustESP32.svg)](https://registry.platformio.org/libraries/jamessmartcell/AugustESP32)
 
+What's new:
+
+v1.1:
+
+- Added finer control to bluetooth connection so connection state can be managed better. Call an 'open comms' command to establish connection ready for use eg:
+
+User logs into app or device receives request for challenge
+
+Establish connection:
+
+```augustLock.lockAction(ESTABLISH_CONNECTION);```
+
+... Wait for user action (user locks August lock)
+
+```augustLock.lockCommand(LOCK);```
+
+... Wait 2 mins for any other action (nothing happens)
+
+```augustLock.closeConnection();```
+
 ESP32 BlueTooth implementation for August smart lock.
 
 Requires h2zero/NimBLE-Arduino@^1.3.1
