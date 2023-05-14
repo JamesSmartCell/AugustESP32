@@ -20,7 +20,8 @@ Establish connection:
 
 ```augustLock.closeConnection();```
 
-ESP32 BlueTooth implementation for August smart lock.
+
+## ESP32 BlueTooth implementation for August smart lock.
 
 Requires h2zero/NimBLE-Arduino@^1.3.1
 
