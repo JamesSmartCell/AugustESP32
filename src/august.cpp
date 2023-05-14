@@ -77,6 +77,7 @@ void AugustLock::lockAction(LockAction action)
 
 void AugustLock::closeConnection()
 {
+    AUGUST_LOG("Close Connection");
     if (pWriteHandshake->canWrite())
     {
         uint8_t *cmd = BuildCommand(0x05);
@@ -98,6 +99,7 @@ void AugustLock::closeConnection()
         }
         else
         {
+            AUGUST_LOG("Call disconnect");
             pClient->disconnect();
         }
 
@@ -131,6 +133,7 @@ void AugustLock::lockCommand(LockAction action)
         }
         else
         {
+            AUGUST_LOG("Call disconnect");
             pClient->disconnect();
         }
     }
@@ -158,6 +161,7 @@ void AugustLock::getStatus()
         }
         else
         {
+            AUGUST_LOG("Call disconnect");
             pClient->disconnect();
         }
     }
@@ -290,6 +294,7 @@ bool AugustLock::connectToServer()
                 }
                 else
                 {
+                    AUGUST_LOG("Call disconnect");
                     pClient->disconnect();
                     return false;
                 }
@@ -437,6 +442,7 @@ void AugustLock::_notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, ui
             }
             else
             {
+                AUGUST_LOG("Call disconnect");
                 pClient->disconnect();
             }
         }
@@ -455,6 +461,10 @@ void AugustLock::_notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, ui
                 case GET_STATUS:
                 case TOGGLE_LOCK:
                     getStatus();
+                    break;
+                case ESTABLISH_CONNECTION:
+                    connectCallback("Connected", false);
+                    //Wait for further instructions
                     break;
             }
         }
@@ -481,7 +491,7 @@ void AugustLock::_secureLockCallback(NimBLERemoteCharacteristic *pRemoteCharacte
         connectCallback("Unlocked", false);
         if (actionAfterSync == TOGGLE_LOCK)
             lockCommand(LOCK);
-        else
+        else if (!actionAfterSync == ESTABLISH_CONNECTION)
             closeConnection();
     }
     else if (status == 0x05)
@@ -489,11 +499,14 @@ void AugustLock::_secureLockCallback(NimBLERemoteCharacteristic *pRemoteCharacte
         connectCallback("Locked", true);
         if (actionAfterSync == TOGGLE_LOCK)
             lockCommand(UNLOCK);
-        else
+        else if (!actionAfterSync == ESTABLISH_CONNECTION)
             closeConnection();
     }
-
-    actionAfterSync = GET_STATUS;
+    else if (status == 0xEF)
+    {
+        if (actionAfterSync == ESTABLISH_CONNECTION)
+            getStatus();
+    }
 }
 
 //

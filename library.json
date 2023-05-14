@@ -1,6 +1,6 @@
 {
 	"name": "AugustESP32", 
-    "version": "1.0.1", 
+    "version": "1.1", 
     "description": "August Lock Bluetooth interface for ESP32 family", 
     "repository": {
         "url": "https://github.com/JamesSmartCell/AugustESP32.git", 

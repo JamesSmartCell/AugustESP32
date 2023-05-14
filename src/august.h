@@ -29,7 +29,8 @@ typedef enum LockAction
     GET_STATUS,
     LOCK,
     UNLOCK,
-    TOGGLE_LOCK
+    TOGGLE_LOCK,
+    ESTABLISH_CONNECTION
 } LockAction;
 
 class AugustLock
@@ -49,10 +50,11 @@ public:
     void setDiscoveredLock(NimBLEAdvertisedDevice *advDev) { advDevice = advDev; doConnect = true; }
     void blankClient() { pClient = nullptr; }
 
-private:
-    void resetCrypto();
     void lockCommand(LockAction action);
     void closeConnection();
+
+private:
+    void resetCrypto();
     bool connectToServer();
     void scanForService();
 
