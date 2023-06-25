@@ -52,6 +52,7 @@ public:
 
     void lockCommand(LockAction action);
     void closeConnection();
+    void stopScanning();
 
 private:
     void resetCrypto();

@@ -2,6 +2,10 @@
 
 What's new:
 
+v1.2:
+
+- Added 'stopScanning' command to allow firmware to cancel a scan that didn't find the door.
+
 v1.1:
 
 - Added finer control to bluetooth connection so connection state can be managed better. Call an 'open comms' command to establish connection ready for use eg:

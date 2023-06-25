@@ -62,6 +62,21 @@ void AugustLock::scanForService()
     pScan->start(0, scanEndedCB);
 }
 
+void AugustLock::stopScanning()
+{
+    NimBLEScan *pScan = NimBLEDevice::getScan();
+    pScan->stop();
+    doConnect = false;
+    doneConnect = false;
+    
+    if (pClient != nullptr)
+    {
+        NimBLEDevice::deleteClient(pClient);
+        pClient = NULL;
+        advDevice = NULL;
+    }
+}
+
 void AugustLock::lockAction(LockAction action)
 {
     resetCrypto();
